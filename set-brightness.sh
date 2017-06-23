@@ -60,8 +60,8 @@ if ! [ -d "$brightness_dir" ] ; then
     exit 1
 fi
 
-if [ "$(id -u)" -ne 0 ] ; then
-    echo "This script must be run as root"
+if ! [ -w "${brightness_dir}/brightness" ] ; then
+    echo "Error: no write permission for ${brightness_dir}/brightness"
     exit 1
 fi
 
