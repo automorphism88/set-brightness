@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# set this variable appropriately
+# set this variable appropriately before running script
 brightness_dir="/sys/devices/pci0000:00/0000:00:01.0/drm/card0/card0-eDP-1/amdgpu_bl0"
 
 # This program is free software: you can redistribute it and/or modify
@@ -18,13 +18,13 @@ brightness_dir="/sys/devices/pci0000:00/0000:00:01.0/drm/card0/card0-eDP-1/amdgp
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 usage() {
-    echo "Usage is:"
-    echo "$0 [n] to set brightness to n"
-    echo "$0 [n] + to increase brightness by n%"
-    echo "$0 [n] - to decrease brightness by n%"
-    echo "$0 [n] ++ to increase brightness by n"
-    echo "$0 [n] -- to decrease brightness by n"
-    exit 1
+    printf "Usage is:\n"
+    printf "%s [n]   \tset brightness to n\n" "$0"
+    printf "%s [n] + \tincrease brightness by n%% of current value\n" "$0"
+    printf "%s [n] - \tdecrease brightness by n%% of current value\n" "$0"
+    printf "%s [n] ++\tincrease brightness by n\n" "$0"
+    printf "%s [n] --\tdecrease brightness by n\n" "$0"
+    exit $1
 }
 
 set_brightness() {
@@ -35,8 +35,8 @@ set_brightness() {
     else
         new_brightness="$1"
     fi
-    echo "Changing brightness from $old_brightness to $new_brightness"
-    echo "$new_brightness" > "${brightness_dir}/brightness"
+    printf "Changing brightness from %s to %s\n" "$old_brightness" "$new_brightness"
+    printf "%s\n" "$new_brightness" > "${brightness_dir}/brightness"
 }
 
 pct_brightness() {
@@ -53,23 +53,29 @@ pct_brightness() {
         fi
         set_brightness "$(( $old_brightness+$delta ))"
     fi
-}            
+}
 
-if ! [ -d "$brightness_dir" ] ; then
-    echo "\$brightness_dir doesn't exist - please edit variable at beginning of script"
-    exit 1
+if [ "$1" = "-h" ] || [ "$1" = "--help" ] ; then
+    usage 0
 fi
 
-if ! [ -w "${brightness_dir}/brightness" ] ; then
-    echo "Error: no write permission for ${brightness_dir}/brightness"
-    exit 1
+if ! [ -d "$brightness_dir" ] ; then
+    printf "\$brightness_dir doesn't exist - please edit variable at beginning of script\n" >&2
+    exit 4
 fi
 
 old_brightness="$(cat "${brightness_dir}/brightness")"
 max_brightness="$(cat "${brightness_dir}/max_brightness")"
 
+printf "Current brightness is %s (%s%% of the maximum %s)\n" "${old_brightness}" "$(( 100*$old_brightness/$max_brightness ))" "${max_brightness}"
+
+if ! [ -w "${brightness_dir}/brightness" ] ; then
+    printf "Error: no write permission for %s\n" "${brightness_dir}/brightness" >&2
+    exit 3
+fi
+
 case $1 in
-    ''|*[!0-9]*) usage ;;
+    ''|*[!0-9]*) usage 2 >&2 ;;
     *)
         case $2 in
             '++') set_brightness "$(( $old_brightness+$1 ))" ;;
